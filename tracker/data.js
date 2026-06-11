@@ -12,29 +12,42 @@
      workingDaysLeft  = floor(calendarDaysLeft × 6/7).                     */
 (function () {
 
+  // Pull from config.js if loaded, else fall back to hardcoded defaults
+  const _cfg = window.TRACKER_CONFIG || {};
   const CONFIG = {
-    monthlyTarget: 300,
-    teamTarget: 1800,
-    teamTargetAim: 2400,
-    teamTargetMax: 3400,
-    gate: 225,
-    totalWorkingDays: 25,    // June: floor(30 × 6/7) = 25
-    sprintRate: 17,
-    monthDays: 30,           // calendar days in June
-    incentivePrizeAt: 200,
-    incentivePrizeLabel: 'win the led panda 🐼',
-    incentivePrizeDesc: 'first agent to hit 200 kycs takes the trophy home',
+    monthlyTarget:       _cfg.monthlyTarget       || 300,
+    teamTarget:          _cfg.teamTarget           || 1800,
+    teamTargetAim:       _cfg.teamTargetAim        || 2400,
+    teamTargetMax:       _cfg.teamTargetMax        || 3400,
+    gate:                _cfg.gate                 || 225,
+    totalWorkingDays:    25,   // auto-computed from month in parseCSV
+    sprintRate:          _cfg.sprintRate           || 17,
+    monthDays:           30,   // auto-computed from month in parseCSV
+    challenge1Eyebrow:   _cfg.challenge1Eyebrow    || 'special challenge',
+    incentivePrizeAt:    _cfg.incentivePrizeAt     || 200,
+    incentivePrizeLabel: _cfg.incentivePrizeLabel  || 'win the led panda 🐼',
+    incentivePrizeDesc:  _cfg.incentivePrizeDesc   || 'first agent to hit 200 kycs takes the trophy home',
+    challenge2Eyebrow:   _cfg.challenge2Eyebrow    || 'special challenge',
+    mysteryATitle:       _cfg.mysteryATitle        || '🎁 fastest to 300 kycs',
+    mysteryADesc:        _cfg.mysteryADesc         || 'first agent to close 300 kycs this month wins a prize',
+    mysteryATarget:      _cfg.mysteryATarget       || null,
+    challenge3Eyebrow:   _cfg.challenge3Eyebrow    || 'special challenge',
+    mysteryBTitle:       _cfg.mysteryBTitle        || '🎁 best day on the floor',
+    mysteryBDesc:        _cfg.mysteryBDesc         || 'most kycs completed in a single working day this month',
+    mysteryBNote:        _cfg.mysteryBNote         || 'record resets each month · prize announced end of month',
   };
 
-  const SLABS = [
-    { min: 17, rate: 120, label: '17+' },
-    { min: 15, rate: 100, label: '15–16' },
-    { min: 12, rate: 80,  label: '12–14' },
-    { min: 11, rate: 60,  label: '11' },
-    { min: 10, rate: 50,  label: '10' },
-    { min: 9,  rate: 40,  label: '9' },
-    { min: 0,  rate: 0,   label: '<9' },
-  ];
+  const SLABS = (window.TRACKER_SLABS && window.TRACKER_SLABS.length)
+    ? window.TRACKER_SLABS
+    : [
+        { min: 17, rate: 120, label: '17+' },
+        { min: 15, rate: 100, label: '15–16' },
+        { min: 12, rate:  80, label: '12–14' },
+        { min: 11, rate:  60, label: '11' },
+        { min: 10, rate:  50, label: '10' },
+        { min:  9, rate:  40, label: '9' },
+        { min:  0, rate:   0, label: '<9' },
+      ];
 
   const TIER_BOUNDARIES = [9, 10, 11, 12, 15, 17];
 

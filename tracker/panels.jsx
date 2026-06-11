@@ -15,7 +15,7 @@ function OfferCard({ accentColor, glowColor, eyebrow, title, desc, leader, leade
         <div style={{ opacity: 0.35 }}>
           <Star s={22} c="var(--ss-yellow-1)" />
         </div>
-        <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.01em', opacity: 0.45, textTransform: 'lowercase' }}>mystery reward</div>
+        <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.01em', opacity: 0.45, textTransform: 'lowercase' }}>special challenge</div>
         <div style={{ fontSize: 11, color: 'var(--fg-muted)', textAlign: 'center', opacity: 0.55 }}>coming soon<br/>announced by team lead</div>
       </section>
     );
@@ -82,7 +82,7 @@ function IncentiveBanner({ agents }) {
     <OfferCard
       accentColor="var(--ss-blue-4)"
       glowColor="rgba(61,65,250,0.45)"
-      eyebrow="live incentive"
+      eyebrow={TT.CONFIG.challenge1Eyebrow}
       title={TT.CONFIG.incentivePrizeLabel}
       desc={TT.CONFIG.incentivePrizeDesc}
       leader={leader ? leader.name : '—'}
@@ -97,7 +97,7 @@ function IncentiveBanner({ agents }) {
 
 // ── 2. Mystery Reward A — first to hit 300 KYCs ───────────────────
 function MysteryFastest300({ agents }) {
-  const TARGET = TT.CONFIG.monthlyTarget; // 300
+  const TARGET = TT.CONFIG.mysteryATarget || TT.CONFIG.monthlyTarget;
   const sorted = [...agents].sort((a, b) => b.kyc - a.kyc);
   const leader = sorted[0];
   const runnerUp = sorted[1];
@@ -107,9 +107,9 @@ function MysteryFastest300({ agents }) {
     <OfferCard
       accentColor="#1a1060"
       glowColor="rgba(100,80,250,0.35)"
-      eyebrow="mystery reward"
-      title="🎁 fastest to 300 kycs"
-      desc="first agent to close 300 kycs this month wins a mystery prize"
+      eyebrow={TT.CONFIG.challenge2Eyebrow}
+      title={TT.CONFIG.mysteryATitle}
+      desc={TT.CONFIG.mysteryADesc}
       leader={leader ? leader.name : '—'}
       progress={leader ? leader.kyc : 0}
       total={TARGET}
@@ -129,16 +129,16 @@ function MysteryBestDay({ data }) {
     <OfferCard
       accentColor="#0d3020"
       glowColor="rgba(61,255,71,0.2)"
-      eyebrow="mystery reward"
-      title="🎁 best day on the floor"
-      desc="most kycs completed in a single working day this month"
+      eyebrow={TT.CONFIG.challenge3Eyebrow}
+      title={TT.CONFIG.mysteryBTitle}
+      desc={TT.CONFIG.mysteryBDesc}
       leader={bestDayAgent.name}
       progress={bestDayAgent.bestDayKyc}
       total={0}
       leaderSub={runnerUp && runnerUp.bestDayKyc > 0
         ? <span>{runnerUp.name.split(' ')[0]} close with <span className="num" style={{ color: 'var(--ss-yellow-1)', fontWeight: 900 }}>{runnerUp.bestDayKyc}</span> kycs in a day</span>
         : null}
-      trailingNote="record resets each month · prize announced end of month"
+      trailingNote={TT.CONFIG.mysteryBNote}
     />
   );
 }
