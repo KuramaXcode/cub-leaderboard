@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" aria-label="SalarySe">
+  <defs>
+    <linearGradient id="ssGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3D41FA"></stop>
+      <stop offset="51%" stop-color="#292CAD"></stop>
+    </linearGradient>
+  </defs>
+  <path d="M 47.6 19.2 L 107 19.5 C 109.5 19.5 112 21.2 112 23.9 L 112 56.6 C 112 58.3 111 59.8 109.5 60.3 L 47.6 82.8 Z" fill="#292CAD"></path>
+  <path d="M 64.2 45.2 L 106.9 30.6 L 106.9 38.2 L 64.2 52.8 Z" fill="#EEFF41"></path>
+  <path d="M 64.2 59.4 L 106.9 44.9 L 106.9 52.5 L 64.2 67.1 Z" fill="#EEFF41"></path>
+  <path d="M 47.6 52.2 L 112 19.2 L 112 54.1 C 112 55.7 111.1 57.1 109.6 57.6 L 53.1 87.3 C 50.6 88.6 47.6 86.7 47.6 83.8 Z" fill="url(#ssGrad)"></path>
+  <path d="M 47.6 133.9 L 47.6 91 L 107 70.5 C 109.5 69.6 112 71.5 112 74.2 L 112 113.4 C 112 115 111 116.5 109.5 117.1 Z" fill="#3D41FA"></path>
+</svg>

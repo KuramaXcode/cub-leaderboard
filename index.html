@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CUB TeleSales — Live Performance Tracker</title>
+<link rel="stylesheet" href="colors_and_type.css" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100%; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  #viewport {
+    position: fixed; inset: 0; overflow: hidden;
+    background:
+      radial-gradient(900px 600px at 18% -10%, rgba(61,65,250,0.20), transparent 60%),
+      radial-gradient(800px 500px at 100% 110%, rgba(238,255,65,0.06), transparent 55%),
+      #000;
+  }
+  #stage {
+    position: absolute; top: 0; left: 0; transform-origin: 0 0;
+    transform: translate(0,0) scale(1);
+    width: 1920px; height: 1080px;
+    padding: 22px; display: flex;
+    color: var(--fg-primary); font-family: var(--font-sans); letter-spacing: -0.01em;
+  }
+  #root { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  h2 { text-transform: lowercase; margin: 0; }
+
+  /* CSV loader overlay */
+  #loader {
+    position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: #000;
+    font-family: "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+  #loader h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -0.02em; margin: 0; text-transform: lowercase; }
+  #loader p  { font-size: 15px; color: rgba(255,255,255,0.5); margin: 0; text-align: center; line-height: 1.6; }
+  #loader label {
+    display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px;
+    background: #3D41FA; color: #fff; border-radius: 999px; font-size: 15px; font-weight: 900;
+    cursor: pointer; letter-spacing: -0.01em; text-transform: lowercase;
+    transition: background 150ms;
+  }
+  #loader label:hover { background: #5557fb; }
+  #loader input[type=file] { display: none; }
+  #loader .err { color: #F74C32; font-size: 13px; }
+  #loader .hint { font-size: 12px; color: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+  <!-- CSV loader — shown when running as file:// or when CSV fetch fails -->
+  <div id="loader" style="display:none">
+    <svg width="56" height="56" viewBox="0 0 160 160">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3D41FA"/><stop offset="51%" stop-color="#292CAD"/></linearGradient></defs>
+      <path d="M 47.6 19.2 L 107 19.5 C 109.5 19.5 112 21.2 112 23.9 L 112 56.6 C 112 58.3 111 59.8 109.5 60.3 L 47.6 82.8 Z" fill="#292CAD"/>
+      <path d="M 64.2 45.2 L 106.9 30.6 L 106.9 38.2 L 64.2 52.8 Z" fill="#EEFF41"/>
+      <path d="M 64.2 59.4 L 106.9 44.9 L 106.9 52.5 L 64.2 67.1 Z" fill="#EEFF41"/>
+      <path d="M 47.6 52.2 L 112 19.2 L 112 54.1 C 112 55.7 111.1 57.1 109.6 57.6 L 53.1 87.3 C 50.6 88.6 47.6 86.7 47.6 83.8 Z" fill="url(#lg)"/>
+      <path d="M 47.6 133.9 L 47.6 91 L 107 70.5 C 109.5 69.6 112 71.5 112 74.2 L 112 113.4 C 112 115 111 116.5 109.5 117.1 Z" fill="#3D41FA"/>
+    </svg>
+    <h1>cub telesales tracker</h1>
+    <p>open the conversions csv to load the dashboard<br><span class="hint">columns used: date · phone · vkyc status · rm · card</span></p>
+    <label>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      select csv file
+      <input type="file" id="csv-input" accept=".csv,text/csv" />
+    </label>
+    <div id="loader-err" class="err"></div>
+  </div>
+
+  <div id="viewport"><div id="stage"><div id="root"></div></div></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="tracker/data.js"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="tracker/sections.jsx"></script>
+  <script type="text/babel" src="tracker/panels.jsx"></script>
+
+  <script>
+    const REFRESH_MS = 10 * 60 * 1000; // 10 minutes
+
+    let csvText = null;
+    let csvMeta = { monthLabel: '', asOf: '' };
+
+    async function tryFetchCSV() {
+      try {
+        const res = await fetch('/api/data');
+        if (!res.ok) throw new Error('fetch failed');
+        return await res.text();
+      } catch {
+        return null;
+      }
+    }
+
+    function loadCSV(text) {
+      const result = window.TRACKER.parseCSV(text);
+      csvText = text;
+      csvMeta = {
+        monthLabel: result.monthLabel,
+        asOf: result.asOf,
+        calendarDaysLeft: result.calendarDaysLeft,
+        workingDaysLeft: result.workingDaysLeft,
+      };
+      return result.raw;
+    }
+
+    // Expose to React app
+    window.__DASHBOARD = {
+      loadCSV,
+      csvMeta: () => csvMeta,
+      tryFetchCSV,
+      REFRESH_MS,
+    };
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+    const T = window.TRACKER;
+    const D = window.__DASHBOARD;
+
+    const TWEAK_DEFAULTS = { accent: 'blue', gateViz: 'marker', rowDesign: 'bars' };
+
+    function useStageScale() {
+      useEffect(() => {
+        const stage = document.getElementById('stage');
+        let rafId = null;
+        const fit = () => {
+          const vw = document.documentElement.clientWidth || window.innerWidth || 0;
+          const vh = document.documentElement.clientHeight || window.innerHeight || 0;
+          if (vw === 0 || vh === 0) { rafId = requestAnimationFrame(fit); return; }
+          const s = Math.min(vw / 1920, vh / 1080);
+          const x = (vw - 1920 * s) / 2;
+          const y = (vh - 1080 * s) / 2;
+          stage.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+        };
+        fit();
+        window.addEventListener('resize', fit);
+        let ro;
+        if (window.ResizeObserver) { ro = new ResizeObserver(fit); ro.observe(document.documentElement); }
+        return () => { if (rafId) cancelAnimationFrame(rafId); window.removeEventListener('resize', fit); if (ro) ro.disconnect(); };
+      }, []);
+    }
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [raw, setRaw] = useState([]);
+      const [meta, setMeta] = useState({ monthLabel: '', asOf: '', calendarDaysLeft: 0, workingDaysLeft: 0 });
+      const [ready, setReady] = useState(false);
+      const [hovered, setHovered] = useState(null);
+      useStageScale();
+
+      const refresh = useCallback(async (text) => {
+        const r = D.loadCSV(text);
+        setRaw(r);
+        setMeta({ ...D.csvMeta() });
+      }, []);
+
+      // Recompute calendarDaysLeft every minute so the countdown stays accurate
+      useEffect(() => {
+        const tick = () => {
+          const { calendarDaysLeft, workingDaysLeft } = T.calcRemainingDays();
+          setMeta(prev => ({ ...prev, calendarDaysLeft, workingDaysLeft }));
+        };
+        const id = setInterval(tick, 60000);
+        return () => clearInterval(id);
+      }, []);
+
+      // On mount: try HTTP fetch, else show loader
+      useEffect(() => {
+        (async () => {
+          const text = await D.tryFetchCSV();
+          if (text) {
+            await refresh(text);
+            setReady(true);
+          } else {
+            document.getElementById('loader').style.display = 'flex';
+          }
+        })();
+      }, []);
+
+      // CSV file picker handler
+      useEffect(() => {
+        const input = document.getElementById('csv-input');
+        const errEl = document.getElementById('loader-err');
+        const handler = e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            try {
+              const r = D.loadCSV(ev.target.result);
+              if (!r.length) { errEl.textContent = 'no agent data found — check the csv format'; return; }
+              setRaw(r);
+              const m = D.csvMeta();
+              // Override days-left from today's date
+              const { calendarDaysLeft, workingDaysLeft } = T.calcRemainingDays();
+              setMeta({ ...m, calendarDaysLeft, workingDaysLeft });
+              document.getElementById('loader').style.display = 'none';
+              setReady(true);
+            } catch (err) {
+              errEl.textContent = 'could not parse csv: ' + err.message;
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.addEventListener('change', handler);
+        return () => input.removeEventListener('change', handler);
+      }, []);
+
+      // Auto-refresh via HTTP every 5 minutes
+      useEffect(() => {
+        if (!ready) return;
+        const id = setInterval(async () => {
+          const text = await D.tryFetchCSV();
+          if (text) refresh(text);
+        }, D.REFRESH_MS);
+        return () => clearInterval(id);
+      }, [ready, refresh]);
+
+      const data = useMemo(() => T.derive(raw, meta.workingDaysLeft), [raw, meta.workingDaysLeft]);
+
+      if (!ready || !data.agents.length) return null;
+
+      return (
+        <React.Fragment>
+          <TeamStrip team={data.team} accent={t.accent} live={true}
+            monthLabel={meta.monthLabel} asOf={meta.asOf} calendarDaysLeft={meta.calendarDaysLeft} />
+
+          <div style={{ flex: 1, display: 'flex', gap: 13, minHeight: 0 }}>
+            <Leaderboard agents={data.agents} accent={t.accent} gateViz={t.gateViz}
+              rowDesign={t.rowDesign} onHover={setHovered} hovered={hovered} />
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <IncentiveBanner agents={data.agents} />
+              <MysteryFastest300 agents={data.agents} />
+              <MysteryBestDay data={data} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 13, height: 272, flexShrink: 0 }}>
+            <UnlockRace agents={data.agents} accent={t.accent} data={data} />
+            <PayoutTiers agents={data.agents} accent={t.accent} />
+          </div>
+
+          <TweaksPanel>
+            <TweakSection label="accent treatment" />
+            <TweakRadio label="hero accent" value={t.accent} options={['blue','yellow']} onChange={v => setTweak('accent', v)} />
+            <TweakSection label="225 payout gate" />
+            <TweakRadio label="gate viz" value={t.gateViz} options={['marker','zones','lock']} onChange={v => setTweak('gateViz', v)} />
+            <TweakSection label="leaderboard row" />
+            <TweakRadio label="row design" value={t.rowDesign} options={['bars','stat']} onChange={v => setTweak('rowDesign', v)} />
+          </TweaksPanel>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
