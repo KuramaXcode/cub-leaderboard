@@ -22,43 +22,52 @@ function OfferCard({ accentColor, glowColor, eyebrow, title, desc, leader, leade
   }
 
   const pct = total > 0 ? Math.min(100, (progress / total) * 100) : 0;
-  const won = progress >= total;
+  const won = total > 0 && progress >= total;
 
   return (
     <section style={{
       position: 'relative', overflow: 'hidden', borderRadius: 18, padding: '13px 16px', flex: 1,
       background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}bb 100%)`,
-      boxShadow: `0 0 28px ${glowColor}`,
+      boxShadow: won ? '0 0 36px rgba(0,224,11,0.55)' : `0 0 28px ${glowColor}`,
+      border: won ? '1px solid rgba(0,224,11,0.5)' : '1px solid transparent',
+      transition: 'box-shadow 600ms, border-color 600ms',
     }}>
-      <div style={{ position: 'absolute', right: -22, top: -22, width: 110, height: 110, borderRadius: 99, background: 'var(--ss-yellow-1)', opacity: 0.1, filter: 'blur(20px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', right: -22, top: -22, width: 110, height: 110, borderRadius: 99, background: won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', opacity: 0.1, filter: 'blur(20px)', pointerEvents: 'none' }} />
       <div style={{ position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', color: 'var(--ss-yellow-1)', textTransform: 'uppercase' }}>
-            <Trophy s={14} c="var(--ss-yellow-1)" /> {eyebrow}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', color: won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', textTransform: 'uppercase' }}>
+            <Trophy s={14} c={won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)'} /> {eyebrow}
           </span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.04em' }}>this month</span>
+          <span style={{ fontSize: 11, color: won ? 'var(--ss-green-3)' : 'rgba(255,255,255,0.6)', fontWeight: won ? 900 : 400, letterSpacing: '0.04em' }}>
+            {won ? '✓ claimed!' : 'this month'}
+          </span>
         </div>
         <div style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.02em', lineHeight: '28px' }}>{title}</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 3, lineHeight: 1.4 }}>{desc}</div>
-        <div style={{ marginTop: 10, background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '9px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ marginTop: 10, background: won ? 'rgba(0,224,11,0.12)' : 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '9px 12px', border: won ? '1px solid rgba(0,224,11,0.3)' : 'none', transition: 'background 600ms' }}>
+          {won && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--ss-green-3)', letterSpacing: '-0.01em' }}>🏆 claimed by</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: won ? 4 : 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Crown s={15} c="var(--ss-yellow-1)" />
-              <span style={{ fontWeight: 900, fontSize: 15, textTransform: 'lowercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
-                {leader} {won ? '🏆' : 'leads'}
+              <Crown s={15} c={won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)'} />
+              <span style={{ fontWeight: 900, fontSize: won ? 18 : 15, textTransform: 'lowercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160, color: won ? 'var(--ss-green-3)' : 'inherit' }}>
+                {leader}
               </span>
             </div>
             <div style={{ fontWeight: 900, fontSize: 20, whiteSpace: 'nowrap' }}>
-              <CountUp value={progress} className="num" style={{ fontWeight: 900, fontSize: 20 }} />
+              <CountUp value={progress} className="num" style={{ fontWeight: 900, fontSize: 20, color: won ? 'var(--ss-green-3)' : 'inherit' }} />
               {total > 0 && <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 900, fontSize: 13 }}> / {total}</span>}
             </div>
           </div>
           {total > 0 && (
             <div style={{ height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: pct + '%', background: won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', borderRadius: 99, transition: 'width 700ms var(--ease-out)' }} />
+              <div style={{ height: '100%', width: pct + '%', background: won ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', borderRadius: 99, transition: 'width 700ms var(--ease-out)', boxShadow: won ? '0 0 8px rgba(0,224,11,0.8)' : 'none' }} />
             </div>
           )}
-          {leaderSub && (
+          {!won && leaderSub && (
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 5 }}>{leaderSub}</div>
           )}
         </div>
