@@ -53,7 +53,7 @@ const Star = ({ s = 16, c = 'currentColor' }) => (
 );
 
 // ── 1. TEAM OVERVIEW STRIP ────────────────────────────────────────
-function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft }) {
+function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft, totalAgents }) {
   const acc = accent === 'yellow' ? 'var(--ss-yellow-1)' : 'var(--ss-blue-4)';
   const accGlow = accent === 'yellow' ? 'var(--shadow-glow-yellow)' : 'var(--shadow-glow-blue)';
   const pct = Math.round(team.pct * 100);
@@ -124,7 +124,7 @@ function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft }) {
         </Stat>
         <Stat label="unlocked" sub="crossed ₹ gate">
           <span className="num" style={{ fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em' }}>{team.crossedGate}</span>
-          <span style={{ fontSize: 14, color: 'var(--fg-muted)', fontWeight: 900 }}>/ 8</span>
+          <span style={{ fontSize: 14, color: 'var(--fg-muted)', fontWeight: 900 }}>/ {totalAgents}</span>
         </Stat>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, paddingLeft: 20, borderLeft: '1px solid var(--border-faint)', whiteSpace: 'nowrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -185,6 +185,75 @@ function GateBar({ a, accent, gateViz, rowDesign, height = 16 }) {
 function Leaderboard({ agents, accent, gateViz, rowDesign, onHover, hovered }) {
   const ROW_H = 61;
   const GAP = 10;
+  const visibleRef = useRef(null);
+  const innerRef = useRef(null);
+  const hoveredRef = useRef(hovered);
+  const scrollState = useRef({ offset: 0, phase: 'pause-top', phaseStart: null, pausedAt: null });
+
+  useEffect(() => { hoveredRef.current = hovered; }, [hovered]);
+
+  useEffect(() => {
+    const PAUSE_MS = 4000;
+    const SCROLL_MS = 6000;
+    const easeInOut = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    const totalH = agents.length * (ROW_H + GAP) - GAP;
+
+    const s = scrollState.current;
+    s.offset = 0; s.phase = 'pause-top'; s.phaseStart = null; s.pausedAt = null;
+
+    let rafId;
+    const tick = now => {
+      const inner = innerRef.current;
+      const visible = visibleRef.current;
+      if (!inner || !visible) { rafId = requestAnimationFrame(tick); return; }
+
+      const maxOff = Math.max(0, totalH - visible.clientHeight);
+
+      if (hoveredRef.current !== null) {
+        if (s.pausedAt === null && s.phaseStart !== null) s.pausedAt = now;
+        inner.style.transform = `translateY(${-s.offset}px)`;
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (s.pausedAt !== null) {
+        if (s.phaseStart !== null) s.phaseStart += (now - s.pausedAt);
+        s.pausedAt = null;
+      }
+
+      if (s.phaseStart === null) s.phaseStart = now;
+      const elapsed = now - s.phaseStart;
+
+      if (maxOff <= 0) {
+        inner.style.transform = '';
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (s.phase === 'pause-top') {
+        s.offset = 0;
+        if (elapsed >= PAUSE_MS) { s.phase = 'scrolling-down'; s.phaseStart = now; }
+      } else if (s.phase === 'pause-bottom') {
+        s.offset = maxOff;
+        if (elapsed >= PAUSE_MS) { s.phase = 'scrolling-up'; s.phaseStart = now; }
+      } else if (s.phase === 'scrolling-down') {
+        const t = Math.min(1, elapsed / SCROLL_MS);
+        s.offset = easeInOut(t) * maxOff;
+        if (t >= 1) { s.offset = maxOff; s.phase = 'pause-bottom'; s.phaseStart = now; }
+      } else if (s.phase === 'scrolling-up') {
+        const t = Math.min(1, elapsed / SCROLL_MS);
+        s.offset = (1 - easeInOut(t)) * maxOff;
+        if (t >= 1) { s.offset = 0; s.phase = 'pause-top'; s.phaseStart = now; }
+      }
+
+      inner.style.transform = `translateY(${-s.offset}px)`;
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [agents.length]);
+
   return (
     <section style={{ display: 'flex', flexDirection: 'column', flex: '1.62', minWidth: 0,
       background: 'var(--ss-white-10)', borderRadius: 18, border: '1px solid var(--border-faint)', padding: '14px 18px 10px', overflow: 'hidden' }}>
@@ -197,12 +266,14 @@ function Leaderboard({ agents, accent, gateViz, rowDesign, onHover, hovered }) {
           <span>earnings</span>
         </div>
       </div>
-      <div style={{ position: 'relative', flex: 1 }}>
-        {agents.map(a => (
-          <AgentRow key={a.id} a={a} accent={accent} gateViz={gateViz} rowDesign={rowDesign}
-            top={(a.rank - 1) * (ROW_H + GAP)} h={ROW_H}
-            onHover={onHover} hovered={hovered === a.id} />
-        ))}
+      <div ref={visibleRef} style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+        <div ref={innerRef} style={{ position: 'relative' }}>
+          {agents.map(a => (
+            <AgentRow key={a.id} a={a} accent={accent} gateViz={gateViz} rowDesign={rowDesign}
+              top={(a.rank - 1) * (ROW_H + GAP)} h={ROW_H}
+              onHover={onHover} hovered={hovered === a.id} />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -360,7 +431,7 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
           <Lock s={16} c="var(--ss-yellow-1)" /> unlock race
         </h2>
         <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-          first to 225 turns on payout · {unlockedCount} of 8 unlocked
+          first to 225 turns on payout · {unlockedCount} of {agents.length} unlocked
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 900, color: 'var(--ss-yellow-1)', whiteSpace: 'nowrap' }}>finish · 225</span>
       </div>
@@ -407,7 +478,7 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
             sub={closestUnlock ? <span><span className="num" style={{ color: acc, fontWeight: 900 }}>{closestUnlock.toGate}</span> kycs to 225</span> : ''} />
           <QuestCard
             icon={<Trophy s={12} />} tone="var(--ss-green-3)" label="gate cleared"
-            value={<span><span className="num">{team.crossedGate}</span> of 8</span>}
+            value={<span><span className="num">{team.crossedGate}</span> of {agents.length}</span>}
             sub="agents are payable" />
         </div>
       </div>

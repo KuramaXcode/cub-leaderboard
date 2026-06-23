@@ -228,7 +228,8 @@
       return (
         <React.Fragment>
           <TeamStrip team={data.team} accent={t.accent} live={true}
-            monthLabel={meta.monthLabel} asOf={meta.asOf} calendarDaysLeft={meta.calendarDaysLeft} />
+            monthLabel={meta.monthLabel} asOf={meta.asOf} calendarDaysLeft={meta.calendarDaysLeft}
+            totalAgents={data.agents.length} />
 
           <div style={{ flex: 1, display: 'flex', gap: 13, minHeight: 0 }}>
             <Leaderboard agents={data.agents} accent={t.accent} gateViz={t.gateViz}
