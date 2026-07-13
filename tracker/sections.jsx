@@ -86,18 +86,18 @@ function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft, tot
           <CountUp value={team.totalKyc} className="num" style={{ fontWeight: 900, fontSize: 38, letterSpacing: '-0.03em' }} />
           <span style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 900 }}>kycs</span>
           <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>·</span>
-          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>floor <span className="num" style={{ color: 'var(--fg-secondary)', fontWeight: 900 }}>1,800</span></span>
+          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>floor <span className="num" style={{ color: 'var(--fg-secondary)', fontWeight: 900 }}>{T.inrPlain(T.CONFIG.teamTarget)}</span></span>
           <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>·</span>
-          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>aim <span className="num" style={{ color: acc, fontWeight: 900 }}>2,400</span></span>
+          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>aim <span className="num" style={{ color: acc, fontWeight: 900 }}>{T.inrPlain(T.CONFIG.teamTargetAim)}</span></span>
           <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>·</span>
-          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>max <span className="num" style={{ color: 'var(--ss-yellow-1)', fontWeight: 900 }}>3,400</span></span>
+          <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>max <span className="num" style={{ color: 'var(--ss-yellow-1)', fontWeight: 900 }}>{T.inrPlain(T.CONFIG.teamTargetMax)}</span></span>
         </div>
         <div style={{ height: 10, borderRadius: 99, background: 'var(--ss-white-10)', overflow: 'visible', position: 'relative', marginTop: 4 }}>
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.min(100, team.pct * 100) + '%', background: acc, borderRadius: 99, boxShadow: accGlow, transition: 'width 700ms var(--ease-out)' }} />
-          {/* 1800 milestone marker */}
-          <div style={{ position: 'absolute', left: (1800/3400*100) + '%', top: -4, bottom: -4, width: 2, background: 'rgba(255,255,255,0.3)', transform: 'translateX(-1px)' }} />
-          {/* 2400 milestone marker */}
-          <div style={{ position: 'absolute', left: (2400/3400*100) + '%', top: -5, bottom: -5, width: 2, background: acc, opacity: 0.7, transform: 'translateX(-1px)' }} />
+          {/* team floor milestone marker */}
+          <div style={{ position: 'absolute', left: (T.CONFIG.teamTarget / T.CONFIG.teamTargetMax * 100) + '%', top: -4, bottom: -4, width: 2, background: 'rgba(255,255,255,0.3)', transform: 'translateX(-1px)' }} />
+          {/* team aim milestone marker */}
+          <div style={{ position: 'absolute', left: (T.CONFIG.teamTargetAim / T.CONFIG.teamTargetMax * 100) + '%', top: -5, bottom: -5, width: 2, background: acc, opacity: 0.7, transform: 'translateX(-1px)' }} />
         </div>
         <div style={{ display: 'flex', gap: 14, marginTop: 2 }}>
           <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
@@ -116,7 +116,7 @@ function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft, tot
         <Stat label="days left" sub="till 30 june">
           <span className="num" style={{ fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em' }}>{calendarDaysLeft}</span>
         </Stat>
-        <Stat label="to aim (2400)" sub="team kycs needed">
+        <Stat label={`to aim (${T.inrPlain(T.CONFIG.teamTargetAim)})`} sub="team kycs needed">
           <CountUp value={team.kycToAim} className="num" style={{ fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em', color: acc }} />
         </Stat>
         <Stat label="pace needed" sub="per agent / day">
@@ -163,11 +163,11 @@ function GateBar({ a, accent, gateViz, rowDesign, height = 16 }) {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: curPct + '%', minWidth: curPct > 0 ? 6 : 0, background: fill, borderRadius: 99, boxShadow: fillGlow, transition: 'width 700ms var(--ease-out), background 300ms' }} />
       <div style={{ position: 'absolute', left: gatePct + '%', top: -5, bottom: -5, width: 2, background: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', transform: 'translateX(-1px)', zIndex: 2 }} />
       {minimal ? (
-        <div title="payout unlocks at 225 kycs" style={{ position: 'absolute', left: gatePct + '%', top: -14, transform: 'translateX(-50%)', zIndex: 3, color: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)' }}>
+        <div title={`payout unlocks at ${T.CONFIG.gate} kycs`} style={{ position: 'absolute', left: gatePct + '%', top: -14, transform: 'translateX(-50%)', zIndex: 3, color: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)' }}>
           <Lock s={10} />
         </div>
       ) : (
-        <div title="payout unlocks at 225 kycs" style={{
+        <div title={`payout unlocks at ${T.CONFIG.gate} kycs`} style={{
           position: 'absolute', left: gatePct + '%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 3,
           width: 20, height: 20, borderRadius: 99, display: 'grid', placeItems: 'center',
           background: unlocked ? 'var(--ss-green-4)' : 'var(--ss-black)',
@@ -259,10 +259,10 @@ function Leaderboard({ agents, accent, gateViz, rowDesign, onHover, hovered }) {
       background: 'var(--ss-white-10)', borderRadius: 18, border: '1px solid var(--border-faint)', padding: '14px 18px 10px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8, gap: 12, flexShrink: 0 }}>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>live leaderboard</h2>
-        <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>ranked by total kycs · gate at 225 · target 300</span>
+        <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>ranked by total kycs · gate at {T.CONFIG.gate} · target {T.CONFIG.monthlyTarget}</span>
         <div style={{ fontSize: 11, color: 'var(--fg-muted)', display: 'flex', gap: 16, flexShrink: 0, letterSpacing: '0.04em' }}>
           <span style={{ width: 230 }}>agent</span>
-          <span style={{ flex: 1 }}>progress to 300</span>
+          <span style={{ flex: 1 }}>progress to {T.CONFIG.monthlyTarget}</span>
           <span>earnings</span>
         </div>
       </div>
@@ -337,7 +337,7 @@ function AgentRow({ a, accent, gateViz, rowDesign, top, h, onHover, hovered }) {
           <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
             {a.toGate > 0
               ? <span><span style={{ color: 'var(--ss-yellow-1)', fontWeight: 900 }} className="num">{a.toGate}</span> to unlock</span>
-              : <span><span style={{ color: 'var(--ss-green-3)', fontWeight: 900 }} className="num">{a.toTarget}</span> to 300</span>}
+              : <span><span style={{ color: 'var(--ss-green-3)', fontWeight: 900 }} className="num">{a.toTarget}</span> to {T.CONFIG.monthlyTarget}</span>}
           </div>
         </div>
         <GateBar a={a} accent={accent} gateViz={gateViz} rowDesign={rowDesign} height={rowDesign === 'stat' ? 7 : 14} />
@@ -431,9 +431,9 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
           <Lock s={16} c="var(--ss-yellow-1)" /> unlock race
         </h2>
         <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-          first to 225 turns on payout · {unlockedCount} of {agents.length} unlocked
+          first to {T.CONFIG.gate} turns on payout · {unlockedCount} of {agents.length} unlocked
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 900, color: 'var(--ss-yellow-1)', whiteSpace: 'nowrap' }}>finish · 225</span>
+        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 900, color: 'var(--ss-yellow-1)', whiteSpace: 'nowrap' }}>finish · {T.CONFIG.gate}</span>
       </div>
 
       {/* race track */}
@@ -475,7 +475,7 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
           <QuestCard
             icon={<Lock s={12} />} tone={acc} label="closest to unlock"
             value={closestUnlock ? closestUnlock.name : '—'}
-            sub={closestUnlock ? <span><span className="num" style={{ color: acc, fontWeight: 900 }}>{closestUnlock.toGate}</span> kycs to 225</span> : ''} />
+            sub={closestUnlock ? <span><span className="num" style={{ color: acc, fontWeight: 900 }}>{closestUnlock.toGate}</span> kycs to {T.CONFIG.gate}</span> : ''} />
           <QuestCard
             icon={<Trophy s={12} />} tone="var(--ss-green-3)" label="gate cleared"
             value={<span><span className="num">{team.crossedGate}</span> of {agents.length}</span>}

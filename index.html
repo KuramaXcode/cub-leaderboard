@@ -249,7 +249,7 @@
           <TweaksPanel>
             <TweakSection label="accent treatment" />
             <TweakRadio label="hero accent" value={t.accent} options={['blue','yellow']} onChange={v => setTweak('accent', v)} />
-            <TweakSection label="225 payout gate" />
+            <TweakSection label={`${window.TRACKER.CONFIG.gate} payout gate`} />
             <TweakRadio label="gate viz" value={t.gateViz} options={['marker','zones','lock']} onChange={v => setTweak('gateViz', v)} />
             <TweakSection label="leaderboard row" />
             <TweakRadio label="row design" value={t.rowDesign} options={['bars','stat']} onChange={v => setTweak('rowDesign', v)} />
