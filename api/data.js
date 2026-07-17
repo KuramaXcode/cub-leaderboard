@@ -1,6 +1,6 @@
 module.exports = async function handler(req, res) {
   const url =
-    'https://docs.google.com/spreadsheets/d/1u4AE43ko-mIGWMkBIwI9-qoYmJ_sjbBI2BCcr0U5OXM/export?format=csv&gid=0';
+    'https://docs.google.com/spreadsheets/d/1tShXIZzrC4RkfdtgOyb0-Lg7mrhtdRvmW-2L35huUw4/export?format=csv&gid=921237688';
   try {
     const upstream = await fetch(url);
     if (!upstream.ok) throw new Error(`sheets ${upstream.status}`);
