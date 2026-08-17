@@ -8,7 +8,7 @@ window.TRACKER_CONFIG = {
 
   /* ── TARGETS ──────────────────────────────────────────────── */
   monthlyTarget:  200,   // KYCs each agent must hit for full payout
-  gate:           140,   // minimum KYCs before ANY payout releases
+  gate:           130,   // minimum KYCs before ANY payout releases
   teamTarget:     2000,  // team floor target (shown on progress bar)
   teamTargetAim:  2400,  // team aim / stretch target
   teamTargetMax:  3200,  // team max / moonshot (100% bar = this)
@@ -17,9 +17,9 @@ window.TRACKER_CONFIG = {
   /* ── SPECIAL MONTHLY CHALLENGES ──────────────────────────── */
   // Challenge 1 — blue card (e.g. LED Panda, first to hit a KYC milestone)
   challenge1Eyebrow:   'special challenge',
-  incentivePrizeAt:    140,
+  incentivePrizeAt:    130,
   incentivePrizeLabel: 'win the led panda 🐼',
-  incentivePrizeDesc:  'first agent to hit 140 kycs takes the trophy home',
+  incentivePrizeDesc:  'first agent to hit 130 kycs takes the trophy home',
 
   // Challenge 2 — purple card (fastest to monthly target)
   challenge2Eyebrow:   'special challenge',
