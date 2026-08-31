@@ -83,9 +83,13 @@ function OfferCard({ accentColor, glowColor, eyebrow, title, desc, leader, leade
 function IncentiveBanner({ agents }) {
   const PRIZE_AT = TT.CONFIG.incentivePrizeAt;
   const sorted = [...agents].sort((a, b) => b.kyc - a.kyc);
-  const leader = sorted[0];
-  const runnerUp = sorted[1];
-  const won = leader && leader.kyc >= PRIZE_AT;
+  // Winner is whoever crossed PRIZE_AT first chronologically, not whoever
+  // currently has the most total KYCs (those can diverge once someone else
+  // pulls ahead after the milestone was already claimed).
+  const firstHit = TT.firstToReach(agents, PRIZE_AT);
+  const won = !!firstHit;
+  const leader = won ? firstHit.agent : sorted[0];
+  const runnerUp = won ? null : sorted[1];
   const remaining = leader ? Math.max(0, PRIZE_AT - leader.kyc) : PRIZE_AT;
   return (
     <OfferCard
@@ -108,9 +112,11 @@ function IncentiveBanner({ agents }) {
 function MysteryFastest300({ agents }) {
   const TARGET = TT.CONFIG.mysteryATarget || TT.CONFIG.monthlyTarget;
   const sorted = [...agents].sort((a, b) => b.kyc - a.kyc);
-  const leader = sorted[0];
-  const runnerUp = sorted[1];
-  const won = leader && leader.kyc >= TARGET;
+  // Same "first past the post" logic as IncentiveBanner — see comment there.
+  const firstHit = TT.firstToReach(agents, TARGET);
+  const won = !!firstHit;
+  const leader = won ? firstHit.agent : sorted[0];
+  const runnerUp = won ? null : sorted[1];
   const remaining = leader ? Math.max(0, TARGET - leader.kyc) : TARGET;
   return (
     <OfferCard

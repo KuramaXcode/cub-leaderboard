@@ -51,6 +51,35 @@
 
   const TIER_BOUNDARIES = [9, 10, 11, 12, 15, 17];
 
+  // Chronological comparator for "DD-Mon-YYYY" date strings.
+  const MONTHS_ORDER = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function compareDateStr(a, b) {
+    const pa = a.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    const pb = b.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (!pa || !pb) return 0;
+    const ya = parseInt(pa[3]), yb = parseInt(pb[3]);
+    if (ya !== yb) return ya - yb;
+    const mi = MONTHS_ORDER.indexOf(pa[2]), mj = MONTHS_ORDER.indexOf(pb[2]);
+    if (mi !== mj) return mi - mj;
+    return parseInt(pa[1]) - parseInt(pb[1]);
+  }
+
+  /* Given agents (each with a chronological .history of {date, cum}),
+     find who first reached `target` cumulative KYCs — i.e. the actual
+     milestone winner, not just whoever leads on total KYC right now. */
+  function firstToReach(agents, target) {
+    if (!target || target <= 0) return null;
+    let best = null;
+    for (const a of agents) {
+      const hit = (a.history || []).find(h => h.cum >= target);
+      if (!hit) continue;
+      if (!best || compareDateStr(hit.date, best.date) < 0) {
+        best = { agent: a, date: hit.date };
+      }
+    }
+    return best;
+  }
+
   function rateForDay(kyc) {
     const n = Math.floor(kyc + 1e-9);
     for (const s of SLABS) if (n >= s.min) return s.rate;
@@ -91,8 +120,6 @@
   function parseCSV(text) {
     const lines = text.split(/\r?\n/);
     const rows = lines.slice(1).filter(l => l.trim().length > 0);
-
-    const MONTHS_ORDER = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     function parseDate(d) {
       const m = d.trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
@@ -143,7 +170,15 @@
         dailyEarnings += rateForDay(kyc) * kyc;
         if (kyc > bestDayKyc) bestDayKyc = kyc;
       }
-      return { name, kyc: d.kyc, days: d.dates.size, dailyEarnings, bestDayKyc };
+      // Chronological running total — lets the UI tell who crossed a
+      // milestone FIRST, not just who currently has the most KYCs.
+      const sortedDates = [...d.dates].sort(compareDateStr);
+      let cum = 0;
+      const history = sortedDates.map(ds => {
+        cum += d.dailyKycs[ds];
+        return { date: ds, cum };
+      });
+      return { name, kyc: d.kyc, days: d.dates.size, dailyEarnings, bestDayKyc, history };
     }).sort((a, b) => b.kyc - a.kyc);
 
     // Month label
@@ -156,16 +191,7 @@
 
     // Latest data date → "as of" label
     const allDates = Object.values(agentData).flatMap(d => [...d.dates]);
-    allDates.sort((a, b) => {
-      const pa = a.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
-      const pb = b.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
-      if (!pa || !pb) return 0;
-      const ya = parseInt(pa[3]), yb = parseInt(pb[3]);
-      if (ya !== yb) return ya - yb;
-      const mi = MONTHS_ORDER.indexOf(pa[2]), mj = MONTHS_ORDER.indexOf(pb[2]);
-      if (mi !== mj) return mi - mj;
-      return parseInt(pa[1]) - parseInt(pb[1]);
-    });
+    allDates.sort(compareDateStr);
     const lastDate = allDates[allDates.length - 1] || '';
     const asOf = lastDate ? lastDate.replace(/-\d{4}$/, '') : '';
 
@@ -226,6 +252,7 @@
         projKyc, projEarnings,
         reqForTarget, reqForGate, nextTier, status,
         bestDayKyc: a.bestDayKyc || 0,
+        history: a.history || [],
         gapToLeader: leaderKyc - a.kyc,
         toGate: Math.max(0, CONFIG.gate - a.kyc),
         toTarget: Math.max(0, CONFIG.monthlyTarget - a.kyc),
@@ -265,6 +292,6 @@
     return { agents, team, paceKing, closestUnlock, bestDayAgent };
   }
 
-  window.TRACKER = { CONFIG, SLABS, parseCSV, derive, rateForDay, rateForAvg, slabForAvg, inr, inrPlain, calcRemainingDays };
+  window.TRACKER = { CONFIG, SLABS, parseCSV, derive, rateForDay, rateForAvg, slabForAvg, inr, inrPlain, calcRemainingDays, firstToReach };
 
 })();
