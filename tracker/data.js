@@ -19,6 +19,7 @@
     teamTarget:          _cfg.teamTarget           || 1800,
     teamTargetAim:       _cfg.teamTargetAim        || 2400,
     teamTargetMax:       _cfg.teamTargetMax        || 3400,
+    barMax:              _cfg.barMax               || _cfg.monthlyTarget || 300,
     gate:                _cfg.gate                 || 225,
     totalWorkingDays:    25,   // auto-computed from month in parseCSV
     monthDays:           30,   // auto-computed from month in parseCSV

@@ -8,6 +8,7 @@ window.TRACKER_CONFIG = {
 
   /* ── TARGETS ──────────────────────────────────────────────── */
   monthlyTarget:  220,   // KYCs each agent must hit for full payout
+  barMax:         300,   // KYC count the leaderboard progress bars run to (100% = this)
   gate:           220,   // default gate (per-group gates live in TRACKER_GROUPS)
   teamTarget:     3300,  // team floor target (shown on progress bar)
   teamTargetAim:  3700,  // team aim / stretch target

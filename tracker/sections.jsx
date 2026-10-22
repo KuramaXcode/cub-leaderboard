@@ -143,7 +143,7 @@ function TeamStrip({ team, accent, live, monthLabel, asOf, calendarDaysLeft, tot
 function GateBar({ a, accent, gateViz, rowDesign, height = 16 }) {
   const acc = accent === 'yellow' ? 'var(--ss-yellow-1)' : 'var(--ss-blue-4)';
   const accGlow = accent === 'yellow' ? '0 0 16px rgba(238,255,65,0.5)' : '0 0 16px rgba(61,65,250,0.6)';
-  const max = T.CONFIG.monthlyTarget;
+  const max = T.CONFIG.barMax;
   const gatePct = (a.gate / max) * 100;
   const curPct = Math.min(100, (a.kyc / max) * 100);
   const unlocked = a.unlocked;
@@ -262,7 +262,7 @@ function Leaderboard({ agents, accent, gateViz, rowDesign, onHover, hovered }) {
         <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>ranked by total kycs · gate at {T.gateLabel} · target {T.CONFIG.monthlyTarget}</span>
         <div style={{ fontSize: 11, color: 'var(--fg-muted)', display: 'flex', gap: 16, flexShrink: 0, letterSpacing: '0.04em' }}>
           <span style={{ width: 230 }}>agent</span>
-          <span style={{ flex: 1 }}>progress to {T.CONFIG.monthlyTarget}</span>
+          <span style={{ flex: 1 }}>progress to {T.CONFIG.barMax}</span>
           <span>earnings</span>
         </div>
       </div>
