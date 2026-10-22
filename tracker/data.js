@@ -21,7 +21,6 @@
     teamTargetMax:       _cfg.teamTargetMax        || 3400,
     gate:                _cfg.gate                 || 225,
     totalWorkingDays:    25,   // auto-computed from month in parseCSV
-    sprintRate:          _cfg.sprintRate           || 17,
     monthDays:           30,   // auto-computed from month in parseCSV
     challenge1Eyebrow:   _cfg.challenge1Eyebrow    || 'special challenge',
     incentivePrizeAt:    _cfg.incentivePrizeAt     || 200,
@@ -37,19 +36,34 @@
     mysteryBNote:        _cfg.mysteryBNote         || 'record resets each month · prize announced end of month',
   };
 
-  const SLABS = (window.TRACKER_SLABS && window.TRACKER_SLABS.length)
-    ? window.TRACKER_SLABS
-    : [
-        { min: 17, rate: 120, label: '17+' },
-        { min: 15, rate: 100, label: '15–16' },
-        { min: 12, rate:  80, label: '12–14' },
-        { min: 11, rate:  60, label: '11' },
-        { min: 10, rate:  50, label: '10' },
-        { min:  9, rate:  40, label: '9' },
-        { min:  0, rate:   0, label: '<9' },
-      ];
+  const DEFAULT_SLABS = [
+    { min: 17, rate: 120, label: '17+' },
+    { min: 15, rate: 100, label: '15–16' },
+    { min: 12, rate:  80, label: '12–14' },
+    { min: 11, rate:  60, label: '11' },
+    { min: 10, rate:  50, label: '10' },
+    { min:  9, rate:  40, label: '9' },
+    { min:  0, rate:   0, label: '<9' },
+  ];
 
-  const TIER_BOUNDARIES = [9, 10, 11, 12, 15, 17];
+  // Payout groups (own gate + ladder). Falls back to one group built from
+  // TRACKER_SLABS / CONFIG.gate if config.js has no TRACKER_GROUPS.
+  const GROUPS = (window.TRACKER_GROUPS && window.TRACKER_GROUPS.length)
+    ? window.TRACKER_GROUPS
+    : [{ id: 'default', gate: CONFIG.gate,
+         slabs: (window.TRACKER_SLABS && window.TRACKER_SLABS.length) ? window.TRACKER_SLABS : DEFAULT_SLABS,
+         members: [] }];
+  const DEFAULT_GROUP = GROUPS[0];
+  const SLABS = DEFAULT_GROUP.slabs;   // default ladder, used by the payout-tiers panel
+
+  const _norm = n => String(n || '').trim().toLowerCase();
+  const _groupByName = {};
+  GROUPS.forEach(g => (g.members || []).forEach(m => { _groupByName[_norm(m)] = g; }));
+  function groupFor(name) {
+    const g = _groupByName[_norm(name)];
+    if (!g && GROUPS.length > 1) console.warn('[tracker] "' + name + '" is not in any payout group — using ' + DEFAULT_GROUP.id);
+    return g || DEFAULT_GROUP;
+  }
 
   // Chronological comparator for "DD-Mon-YYYY" date strings.
   const MONTHS_ORDER = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -80,18 +94,19 @@
     return best;
   }
 
-  function rateForDay(kyc) {
+  function rateForDay(kyc, group) {
     const n = Math.floor(kyc + 1e-9);
-    for (const s of SLABS) if (n >= s.min) return s.rate;
+    for (const s of (group || DEFAULT_GROUP).slabs) if (n >= s.min) return s.rate;
     return 0;
   }
-  function rateForAvg(avg) {
-    return rateForDay(avg);
+  function rateForAvg(avg, group) {
+    return rateForDay(avg, group);
   }
-  function slabForAvg(avg) {
+  function slabForAvg(avg, group) {
+    const slabs = (group || DEFAULT_GROUP).slabs;
     const a = Math.floor(avg + 1e-9);
-    for (const s of SLABS) if (a >= s.min) return s;
-    return SLABS[SLABS.length - 1];
+    for (const s of slabs) if (a >= s.min) return s;
+    return slabs[slabs.length - 1];
   }
 
   function inr(n) {
@@ -164,10 +179,11 @@
 
     // Compute daily earnings + best single day per agent
     const raw = Object.entries(agentData).map(([name, d]) => {
+      const group = groupFor(name);
       let dailyEarnings = 0;
       let bestDayKyc = 0;
       for (const kyc of Object.values(d.dailyKycs)) {
-        dailyEarnings += rateForDay(kyc) * kyc;
+        dailyEarnings += rateForDay(kyc, group) * kyc;
         if (kyc > bestDayKyc) bestDayKyc = kyc;
       }
       // Chronological running total — lets the UI tell who crossed a
@@ -219,42 +235,46 @@
 
     const agents = raw.map((a, i) => {
       const avg = a.days > 0 ? a.kyc / a.days : 0;
-      const slab = slabForAvg(avg);
+      const group = groupFor(a.name);
+      const slab = slabForAvg(avg, group);
+      const gate = group.gate;
 
       // DAILY EARNINGS: pre-computed in parseCSV; use if available, else fall back
       const earnings = a.dailyEarnings !== undefined ? a.dailyEarnings : slab.rate * a.kyc;
-      const unlocked = a.kyc >= CONFIG.gate;
+      const unlocked = a.kyc >= gate;
 
-      // Projected MAX if sprinting at 17/day for remaining days (17 → ₹120/kyc daily)
-      const projSprintEarnings = 17 * 120 * remDays;
+      // Projected MAX if sprinting at the top tier every remaining day
+      const topSlab = group.slabs[0];
+      const projSprintEarnings = topSlab.min * topSlab.rate * remDays;
       const projEarnings = earnings + projSprintEarnings;
-      const projKyc = a.kyc + CONFIG.sprintRate * remDays;
+      const projKyc = a.kyc + topSlab.min * remDays;   // sprint = top-tier daily KYCs for this agent's ladder
 
       const reqForTarget = remDays > 0 ? (CONFIG.monthlyTarget - a.kyc) / remDays : 0;
-      const reqForGate   = remDays > 0 ? Math.max(0, (CONFIG.gate - a.kyc) / remDays) : 0;
+      const reqForGate   = remDays > 0 ? Math.max(0, (gate - a.kyc) / remDays) : 0;
 
       // Next earning tier nudge: what daily rate would push them to the next tier?
       let nextTier = null;
-      for (const boundary of TIER_BOUNDARIES) {
+      const boundaries = group.slabs.map(s => s.min).filter(m => m > 0).sort((x, y) => x - y);
+      for (const boundary of boundaries) {
         if (boundary > Math.floor(avg + 1e-9)) {
-          nextTier = { avg: boundary, rate: rateForAvg(boundary) };
+          nextTier = { avg: boundary, rate: rateForAvg(boundary, group) };
           break;
         }
       }
 
       let status = 'ontrack';
       if (reqForTarget > avg + 3) status = 'behind';
-      if (reqForTarget > CONFIG.sprintRate) status = 'urgent';
+      if (reqForTarget > topSlab.min) status = 'urgent';
 
       return {
         id: 'a' + i, name: a.name, kyc: a.kyc, days: a.days,
-        avg, slab, earnings, unlocked, remDays,
+        avg, slab, group, gate, earnings, unlocked, remDays,
         projKyc, projEarnings,
         reqForTarget, reqForGate, nextTier, status,
         bestDayKyc: a.bestDayKyc || 0,
         history: a.history || [],
         gapToLeader: leaderKyc - a.kyc,
-        toGate: Math.max(0, CONFIG.gate - a.kyc),
+        toGate: Math.max(0, gate - a.kyc),
         toTarget: Math.max(0, CONFIG.monthlyTarget - a.kyc),
       };
     });
@@ -292,6 +312,9 @@
     return { agents, team, paceKing, closestUnlock, bestDayAgent };
   }
 
-  window.TRACKER = { CONFIG, SLABS, parseCSV, derive, rateForDay, rateForAvg, slabForAvg, inr, inrPlain, calcRemainingDays, firstToReach };
+  /* '220' or '220 / 170' when groups differ — for headers. */
+  const gateLabel = [...new Set(GROUPS.map(g => g.gate))].sort((x, y) => y - x).join(' / ');
+
+  window.TRACKER = { CONFIG, SLABS, GROUPS, groupFor, gateLabel, parseCSV, derive, rateForDay, rateForAvg, slabForAvg, inr, inrPlain, calcRemainingDays, firstToReach };
 
 })();

@@ -144,7 +144,7 @@ function GateBar({ a, accent, gateViz, rowDesign, height = 16 }) {
   const acc = accent === 'yellow' ? 'var(--ss-yellow-1)' : 'var(--ss-blue-4)';
   const accGlow = accent === 'yellow' ? '0 0 16px rgba(238,255,65,0.5)' : '0 0 16px rgba(61,65,250,0.6)';
   const max = T.CONFIG.monthlyTarget;
-  const gatePct = (T.CONFIG.gate / max) * 100;
+  const gatePct = (a.gate / max) * 100;
   const curPct = Math.min(100, (a.kyc / max) * 100);
   const unlocked = a.unlocked;
   const minimal = rowDesign === 'stat';
@@ -163,11 +163,11 @@ function GateBar({ a, accent, gateViz, rowDesign, height = 16 }) {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: curPct + '%', minWidth: curPct > 0 ? 6 : 0, background: fill, borderRadius: 99, boxShadow: fillGlow, transition: 'width 700ms var(--ease-out), background 300ms' }} />
       <div style={{ position: 'absolute', left: gatePct + '%', top: -5, bottom: -5, width: 2, background: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)', transform: 'translateX(-1px)', zIndex: 2 }} />
       {minimal ? (
-        <div title={`payout unlocks at ${T.CONFIG.gate} kycs`} style={{ position: 'absolute', left: gatePct + '%', top: -14, transform: 'translateX(-50%)', zIndex: 3, color: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)' }}>
+        <div title={`payout unlocks at ${a.gate} kycs`} style={{ position: 'absolute', left: gatePct + '%', top: -14, transform: 'translateX(-50%)', zIndex: 3, color: unlocked ? 'var(--ss-green-3)' : 'var(--ss-yellow-1)' }}>
           <Lock s={10} />
         </div>
       ) : (
-        <div title={`payout unlocks at ${T.CONFIG.gate} kycs`} style={{
+        <div title={`payout unlocks at ${a.gate} kycs`} style={{
           position: 'absolute', left: gatePct + '%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 3,
           width: 20, height: 20, borderRadius: 99, display: 'grid', placeItems: 'center',
           background: unlocked ? 'var(--ss-green-4)' : 'var(--ss-black)',
@@ -259,7 +259,7 @@ function Leaderboard({ agents, accent, gateViz, rowDesign, onHover, hovered }) {
       background: 'var(--ss-white-10)', borderRadius: 18, border: '1px solid var(--border-faint)', padding: '14px 18px 10px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8, gap: 12, flexShrink: 0 }}>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>live leaderboard</h2>
-        <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>ranked by total kycs · gate at {T.CONFIG.gate} · target {T.CONFIG.monthlyTarget}</span>
+        <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>ranked by total kycs · gate at {T.gateLabel} · target {T.CONFIG.monthlyTarget}</span>
         <div style={{ fontSize: 11, color: 'var(--fg-muted)', display: 'flex', gap: 16, flexShrink: 0, letterSpacing: '0.04em' }}>
           <span style={{ width: 230 }}>agent</span>
           <span style={{ flex: 1 }}>progress to {T.CONFIG.monthlyTarget}</span>
@@ -314,8 +314,9 @@ function AgentRow({ a, accent, gateViz, rowDesign, top, h, onHover, hovered }) {
             <span style={{ fontSize: 10, color: 'var(--fg-muted)', letterSpacing: '0.04em' }}>avg/day</span>
           </span>
           {(() => {
-            const tier80 = { avg: 12, rate: 80 };
-            const target = a.slab.rate < 80 ? tier80 : a.nextTier;
+            // below ₹80/kyc, aim straight for the first ₹80+ tier
+            const s80 = [...a.group.slabs].reverse().find(s => s.rate >= 80);
+            const target = a.slab.rate < 80 && s80 ? { avg: s80.min, rate: s80.rate } : a.nextTier;
             return target
               ? <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontWeight: 900, whiteSpace: 'nowrap' }}>
                   aim <span className="num" style={{ color: 'var(--ss-yellow-1)' }}>{target.avg}</span>/day
@@ -393,7 +394,6 @@ function EarningsCell({ a, accent }) {
 // ── 3. UNLOCK RACE + SIDE QUESTS (integrated) ─────────────────────
 function UnlockRace({ agents, accent, data, extraQuests }) {
   const acc = accent === 'yellow' ? 'var(--ss-yellow-1)' : 'var(--ss-blue-4)';
-  const max = T.CONFIG.gate;
   const ranked = [...agents].sort((a, b) => b.kyc - a.kyc);
   const unlockedCount = agents.filter(a => a.unlocked).length;
 
@@ -431,9 +431,9 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
           <Lock s={16} c="var(--ss-yellow-1)" /> unlock race
         </h2>
         <span style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-          first to {T.CONFIG.gate} turns on payout · {unlockedCount} of {agents.length} unlocked
+          first to {T.gateLabel} turns on payout · {unlockedCount} of {agents.length} unlocked
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 900, color: 'var(--ss-yellow-1)', whiteSpace: 'nowrap' }}>finish · {T.CONFIG.gate}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 900, color: 'var(--ss-yellow-1)', whiteSpace: 'nowrap' }}>finish · {T.gateLabel}</span>
       </div>
 
       {/* race track */}
@@ -441,8 +441,8 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 0, borderRight: '2px dashed var(--ss-yellow-1)' }} />
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', height: '100%' }}>
           {ranked.map(a => {
-            const p = Math.min(100, (a.kyc / max) * 100);
-            const done = a.kyc >= max;
+            const p = Math.min(100, (a.kyc / a.gate) * 100);
+            const done = a.kyc >= a.gate;
             return (
               <div key={a.id} style={{ position: 'relative', height: 20 }}>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 5, transform: 'translateY(-50%)', background: 'var(--ss-white-10)', borderRadius: 99 }} />
@@ -475,7 +475,7 @@ function UnlockRace({ agents, accent, data, extraQuests }) {
           <QuestCard
             icon={<Lock s={12} />} tone={acc} label="closest to unlock"
             value={closestUnlock ? closestUnlock.name : '—'}
-            sub={closestUnlock ? <span><span className="num" style={{ color: acc, fontWeight: 900 }}>{closestUnlock.toGate}</span> kycs to {T.CONFIG.gate}</span> : ''} />
+            sub={closestUnlock ? <span><span className="num" style={{ color: acc, fontWeight: 900 }}>{closestUnlock.toGate}</span> kycs to {closestUnlock.gate}</span> : ''} />
           <QuestCard
             icon={<Trophy s={12} />} tone="var(--ss-green-3)" label="gate cleared"
             value={<span><span className="num">{team.crossedGate}</span> of {agents.length}</span>}
